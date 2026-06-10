@@ -516,10 +516,10 @@
           body: JSON.stringify({ ...payload(), etapa: map[current.id], textoEtapa: textValue(textMap[current.id]) })
         });
         const data = await response.json();
-        showMessage(`${data.titulo || "Dica"}: ${data.mensagem || data.balao || ""}`);
+        showMessage(data.mensagem || data.balao || "Pode continuar.");
       } catch (error) {
         const data = localValidation(textValue(textMap[current.id]));
-        showMessage(`${data.titulo}: ${data.mensagem}`);
+        showMessage(data.mensagem);
       } finally {
         $("validateBtn").disabled = false;
         $("validateBtn").textContent = "Validar etapa";
