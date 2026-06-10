@@ -32,7 +32,7 @@ Quando ok=true:
 - Cite 1 ou 2 acertos concretos e verificáveis no texto.
 - Mostre curiosidade por algo escrito no texto ou pelo que pode vir depois.
 - Se a etapa NÃO for final, convide a clicar em Continuar.
-- Se a etapa for final, NÃO diga "continuar", NÃO pergunte "o que aconteceu depois" e NÃO peça nova parte da história. Reconheça que a redação terminou e convide a criança a revisar/analisar o texto.
+- Se a etapa for final, NÃO pergunte "o que aconteceu depois" e NÃO peça nova parte da história. Reconheça que a redação terminou e convide a criança a clicar em Continuar para ir para a revisão final.
 - Não crie título criativo para a etapa.
 - Não use tom de boletim, nota ou correção.
 
@@ -40,7 +40,7 @@ Bom tom:
 "Emerson, fiquei curioso para saber o que aconteceu depois que o foguete decolou. Você já mostrou que entrou com seus amigos no compartimento e que o foguete saiu com vocês dentro. Agora clique em Continuar para contar a próxima parte."
 
 Bom tom para etapa final:
-"Emerson, gostei de como você fechou a aventura mostrando a chegada pela escotilha. Sua redação já tem começo, meio e final. Agora revise o texto inteiro e clique em Analisar redação para receber uma dica final."
+"Emerson, gostei de como você fechou a aventura mostrando a chegada pela escotilha. Sua redação já tem começo, meio e final. Agora clique em Continuar para ir para a revisão final."
 
 Quando ok=false:
 - Comece acolhendo a ideia.
@@ -103,11 +103,11 @@ Texto:
         titulo: texto.length >= min ? "Estou curioso" : "Só mais um detalhe",
         mensagem: texto.length >= min
           ? isFinal
-            ? `${aluno}, gostei de como você fechou sua redação. Agora revise o texto inteiro e clique em Analisar redação para receber uma dica final.`
+            ? `${aluno}, gostei de como você fechou sua redação. Agora clique em Continuar para ir para a revisão final.`
             : `${aluno}, sua ideia já começou bem e deu vontade de saber ${next}. Clique em Continuar para seguir.`
           : `${aluno}, sua ideia já apareceu. Conte mais um detalhe para eu imaginar melhor essa parte.`,
         balao: texto.length >= min
-          ? isFinal ? "Agora vamos revisar o texto inteiro." : "Agora vamos para a próxima parte."
+          ? isFinal ? "Agora vamos para a revisão final." : "Agora vamos para a próxima parte."
           : profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou.",
         sugestao: { aluno_trecho: "", como_pode_ficar: "" }
       });
