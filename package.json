@@ -1,0 +1,18 @@
+{
+  "name": "redacao-miguel-gpt",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev",
+    "static": "node scripts/static-server.mjs",
+    "check": "node --check api/_lib.js && node --check api/validar-etapa.js && node --check api/analisar.js && node --check api/ultimas.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
+  },
+  "devDependencies": {
+    "vercel": "^34.3.0"
+  }
+}

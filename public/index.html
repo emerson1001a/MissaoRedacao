@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Missão Redação</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #667085;
+      --line: #d8e0ef;
+      --paper: #fffdf7;
+      --blue: #2563eb;
+      --green: #16a34a;
+      --orange: #f97316;
+      --rose: #e11d48;
+      --soft-blue: #eaf2ff;
+      --soft-green: #eaf8ef;
+      --soft-orange: #fff3e8;
+      --shadow: 0 18px 45px rgba(31, 41, 55, .12);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, system-ui, sans-serif;
+      background:
+        linear-gradient(135deg, rgba(37, 99, 235, .10), transparent 30%),
+        linear-gradient(315deg, rgba(249, 115, 22, .12), transparent 32%),
+        #f7fafc;
+      color: var(--ink);
+    }
+
+    .app { min-height: 100vh; }
+    .shell { width: min(1080px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 40px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 18px; }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center;
+      background: var(--blue); color: #fff; font-weight: 900; box-shadow: var(--shadow);
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 2px; font-size: 28px; letter-spacing: 0; }
+    .muted { color: var(--muted); }
+
+    .modeBar { display: flex; gap: 8px; flex-wrap: wrap; }
+    button {
+      min-height: 42px; border: 0; border-radius: 10px; padding: 10px 14px;
+      background: var(--blue); color: #fff; font-weight: 800; cursor: pointer;
+    }
+    button.secondary { background: #e8edf7; color: var(--ink); }
+    button.good { background: var(--green); }
+    button.ghost { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    .panel {
+      background: rgba(255, 255, 255, .88); border: 1px solid var(--line);
+      border-radius: 16px; box-shadow: var(--shadow);
+    }
+    .pad { padding: 18px; }
+    .cardTitle { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 12px; }
+    .progress { height: 12px; background: #e8edf7; border-radius: 999px; overflow: hidden; }
+    .bar { height: 100%; width: 20%; background: var(--green); transition: width .2s ease; }
+    .mission { background: var(--paper); border: 1px solid #efe2c5; border-radius: 14px; padding: 16px; }
+    .balloon {
+      position: relative; padding: 14px 16px; border-radius: 14px; background: var(--soft-blue);
+      border: 1px solid #c9ddff; line-height: 1.45; margin-bottom: 14px;
+    }
+    .balloon:after {
+      content: ""; position: absolute; left: 28px; bottom: -9px; width: 16px; height: 16px;
+      background: var(--soft-blue); border-right: 1px solid #c9ddff; border-bottom: 1px solid #c9ddff;
+      transform: rotate(45deg);
+    }
+    .field { margin-top: 14px; }
+    label { display: block; font-weight: 900; margin-bottom: 6px; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 12px;
+      background: #fff; color: var(--ink); font-size: 16px;
+    }
+    textarea { min-height: 180px; resize: vertical; line-height: 1.45; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .chip.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .hidden { display: none !important; }
+    .notice { padding: 12px; border-radius: 12px; background: var(--soft-green); border: 1px solid #ccebd6; margin-top: 12px; }
+    .warning { background: var(--soft-orange); border-color: #fed7aa; }
+    .finalText { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+
+    .sideCard { padding: 14px; border-top: 1px solid var(--line); }
+    .sideCard:first-child { border-top: 0; }
+    .stepList { display: grid; gap: 8px; }
+    .stepItem { display: flex; gap: 8px; align-items: center; color: var(--muted); }
+    .dot { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; background: #e8edf7; color: var(--muted); font-size: 12px; font-weight: 900; }
+    .stepItem.active { color: var(--ink); font-weight: 900; }
+    .stepItem.active .dot { background: var(--blue); color: #fff; }
+
+    .adultGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .historyItem { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; margin-top: 10px; }
+
+    @media (max-width: 860px) {
+      .grid, .adultGrid { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="logo">MR</div>
+          <div>
+            <h1>Missão Redação</h1>
+            <div class="muted">Uma etapa por vez, com ajuda no momento certo.</div>
+          </div>
+        </div>
+        <nav class="modeBar">
+          <button id="childMode">Crianca</button>
+          <button id="adultMode" class="secondary">Pai ou professor</button>
+        </nav>
+      </header>
+
+      <main id="childView" class="grid">
+        <section class="panel pad">
+          <div class="cardTitle">
+            <div>
+              <h2 id="missionTitle">Missão 1: quem está escrevendo?</h2>
+              <div class="muted" id="missionSubtitle">Vamos preparar sua aventura de escrita.</div>
+            </div>
+            <strong id="missionCount">1/6</strong>
+          </div>
+          <div class="progress"><div id="progressBar" class="bar"></div></div>
+
+          <div class="mission" style="margin-top:16px">
+            <div class="balloon" id="bubble">Escreva seu nome e sua idade para eu te conhecer melhor.</div>
+
+            <div id="stepStudent">
+              <div class="field">
+                <label>Seu nome</label>
+                <input id="studentName" placeholder="Ex.: Miguel">
+              </div>
+              <div class="field">
+                <label>Sua idade</label>
+                <input id="studentAge" type="number" min="6" max="18" placeholder="Ex.: 11">
+              </div>
+            </div>
+
+            <div id="stepType" class="hidden">
+              <label>O que você quer escrever?</label>
+              <div class="chips">
+                <button class="chip" data-type="historia">Uma história</button>
+                <button class="chip" data-type="relato">Algo que aconteceu comigo</button>
+                <button class="chip" data-type="opiniao">Minha opinião</button>
+              </div>
+            </div>
+
+            <div id="stepTheme" class="hidden">
+              <div class="field">
+                <label>Tema</label>
+                <input id="theme" placeholder="Ex.: Uma aventura no recreio">
+              </div>
+              <div class="field">
+                <label>Titulo</label>
+                <input id="title" placeholder="Ex.: O recreio misterioso">
+              </div>
+            </div>
+
+            <div id="stepBegin" class="hidden">
+              <div class="field">
+                <label>Comeco</label>
+                <textarea id="begin" placeholder="Conte quem aparece e onde tudo começa."></textarea>
+              </div>
+            </div>
+
+            <div id="stepMiddle" class="hidden">
+              <div class="field">
+                <label>Meio</label>
+                <textarea id="middle" placeholder="Conte o que aconteceu depois."></textarea>
+              </div>
+            </div>
+
+            <div id="stepEnd" class="hidden">
+              <div class="field">
+                <label>Final</label>
+                <textarea id="end" placeholder="Conte como terminou e o que mudou."></textarea>
+              </div>
+            </div>
+
+            <div id="stepReview" class="hidden">
+              <div class="notice">
+                <strong>Redação montada!</strong>
+                <p class="muted">Quando estiver pronto, clique em analisar redação.</p>
+              </div>
+              <div id="fullText" class="finalText"></div>
+              <div id="childFeedback" class="notice hidden"></div>
+            </div>
+
+            <div id="message" class="notice warning hidden"></div>
+
+            <div class="actions">
+              <button id="backBtn" class="secondary" disabled>Voltar</button>
+              <button id="nextBtn">Continuar</button>
+              <button id="validateBtn" class="ghost hidden">Validar etapa</button>
+              <button id="finishBtn" class="good hidden">Analisar redação</button>
+              <button id="resetBtn" class="secondary">Limpar</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel">
+          <div class="sideCard">
+            <h3>Mapa das missoes</h3>
+            <div class="stepList" id="stepList"></div>
+          </div>
+          <div class="sideCard">
+            <h3>Dica rápida</h3>
+            <p class="muted" id="quickTip">Uma frase boa já abre caminho para outra.</p>
+          </div>
+        </aside>
+      </main>
+
+      <main id="adultView" class="panel pad hidden">
+        <div class="cardTitle">
+          <div>
+            <h2>Painel do pai ou professor</h2>
+            <div class="muted">Aqui ficam histórico e orientações para ajudar sem pressionar.</div>
+          </div>
+          <button id="loadHistory" class="secondary">Atualizar</button>
+        </div>
+        <div class="adultGrid">
+          <section>
+            <h3>Aluno</h3>
+            <div class="field">
+              <label>Nome</label>
+              <input id="adultName" placeholder="Miguel">
+            </div>
+            <div class="field">
+              <label>Idade</label>
+              <input id="adultAge" type="number" min="6" max="18" placeholder="11">
+            </div>
+          </section>
+          <section>
+            <h3>Como usar</h3>
+            <div class="notice">
+              Leia a orientação antes de corrigir. A ideia é conversar com uma pergunta simples, não reescrever pela criança.
+            </div>
+          </section>
+        </div>
+
+        <div class="adultGrid" style="margin-top:14px">
+          <section class="historyItem">
+            <h3>Orientação do momento</h3>
+            <p id="adultGuidance">Preencha nome e idade para receber uma orientação adequada.</p>
+          </section>
+          <section class="historyItem">
+            <h3>Frase para usar</h3>
+            <p id="adultPhrase">"Me conta com suas palavras antes de escrever."</p>
+          </section>
+          <section class="historyItem">
+            <h3>Evite dizer</h3>
+            <p id="adultAvoid">"Isso está errado" ou "não ficou bom". Prefira uma pergunta pequena.</p>
+          </section>
+          <section class="historyItem">
+            <h3>Atividade rápida</h3>
+            <p id="adultActivity">Peça para a criança desenhar três quadrinhos: começo, meio e final.</p>
+          </section>
+        </div>
+
+        <div id="history"></div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const steps = [
+      { id: "student", title: "Missão 1: quem está escrevendo?", subtitle: "Vamos preparar sua aventura de escrita.", bubble: "Escreva seu nome e sua idade para eu te conhecer melhor.", tip: "Preencha nome e idade para eu adaptar as dicas." },
+      { id: "type", title: "Missão 2: escolha o tipo", subtitle: "Cada tipo pede um jeito diferente de escrever.", bubble: "Agora escolha o tipo de texto que você quer escrever: história, relato ou opinião.", tip: "Se tiver personagem e acontecimentos, escolha história." },
+      { id: "theme", title: "Missão 3: tema e título", subtitle: "Agora damos nome para a ideia.", bubble: "Tema é o assunto da redação. Título é o nome bonito que você dá para o seu texto.", tip: "Exemplo: o tema pode ser amizade. O título pode ser Meu melhor amigo." },
+      { id: "begin", title: "Missão 4: começo", subtitle: "Mostre onde tudo começa.", bubble: "Escreva o começo. Conte quem aparece, onde está e como tudo começa.", tip: "Pergunte: quem? onde? quando?" },
+      { id: "middle", title: "Missão 5: meio", subtitle: "A parte em que as coisas acontecem.", bubble: "Escreva o meio. Conte o que aconteceu depois ou explique melhor sua ideia.", tip: "Use depois, então, por isso ou por exemplo." },
+      { id: "end", title: "Missão 6: final", subtitle: "Feche a redação com calma.", bubble: "Escreva o final. Mostre como terminou ou qual ideia você quer deixar.", tip: "Não precisa inventar coisa nova. Feche o que você já contou." },
+      { id: "review", title: "Revisão final", subtitle: "Hora de olhar o texto inteiro.", bubble: "Leia sua redação inteira e veja se quer mudar alguma coisa antes da análise.", tip: "Melhorar uma coisa por vez funciona melhor." }
+    ];
+
+    const HISTORY_KEY = "missao-redacao-historico";
+    const state = { step: 0, type: "", validating: false, analyzing: false };
+
+    function activeStep() { return steps[state.step]; }
+    function textValue(id) { return ($(id).value || "").trim(); }
+    function currentAge() {
+      const age = Number(textValue("studentAge"));
+      return Number.isFinite(age) && age >= 6 && age <= 18 ? age : 11;
+    }
+    function ageProfile() {
+      const age = currentAge();
+      if (age <= 8) return { min: 12, label: "frases bem pequenas" };
+      if (age <= 11) return { min: 20, label: "ideias curtas e organizadas" };
+      if (age <= 14) return { min: 35, label: "ideias com exemplo" };
+      return { min: 50, label: "argumentos mais completos" };
+    }
+    function localValidation(text) {
+      const profile = ageProfile();
+      if (text.length >= profile.min) {
+        return { titulo: "Pode continuar", mensagem: "Sua ideia já apareceu. Vamos para a próxima missão." };
+      }
+      return {
+        titulo: "Só mais um pouco",
+        mensagem: currentAge() <= 8
+          ? "Conte mais uma coisa que aconteceu."
+          : "Coloque mais um detalhe para a ideia ficar mais completa."
+      };
+    }
+    function localReview() {
+      const age = currentAge();
+      const typeName = displayType();
+      const adult = adultProfile(age);
+      const childTip = age <= 8
+        ? "Gostei de ver sua ideia aparecendo. Agora escolha uma frase e veja se dá para colocar mais um detalhe."
+        : age <= 11
+          ? "Sua redação já tem uma sequência. Agora veja se o começo, o meio e o final estão bem ligados."
+          : "Seu texto já tem uma base. Escolha uma parte para melhorar com mais detalhe, exemplo ou ligação entre ideias.";
+      return {
+        review_crianca: `${childTip} Tipo escolhido: ${typeName}.`,
+        orientacao_adulto: adult.guidance
+      };
+    }
+    function adultProfile(age) {
+      if (age <= 8) {
+        return {
+          guidance: "Nesta idade, o mais importante é transformar fala em escrita. Primeiro deixe a criança contar oralmente, depois ajude a escolher uma frase para escrever.",
+          phrase: "\"Me conta primeiro. Quem apareceu? Onde estava? O que aconteceu?\"",
+          avoid: "\"Escreve direito\" ou corrigir tudo ao mesmo tempo.",
+          activity: "Peça um desenho com 3 partes. Depois a criança escreve uma frase para cada desenho."
+        };
+      }
+      if (age <= 11) {
+        return {
+          guidance: "Nesta idade, foque em organização simples: começo, meio e final. Corrija uma coisa por vez e preserve a ideia original da criança.",
+          phrase: "\"O que aconteceu primeiro? E depois? Como terminou?\"",
+          avoid: "\"Está confuso\". Troque por: \"vamos colocar em ordem?\"",
+          activity: "Use três cartões: começo, meio e final. A criança coloca uma frase em cada cartão antes de escrever o texto."
+        };
+      }
+      if (age <= 14) {
+        return {
+          guidance: "Nesta idade, trabalhe ligação entre ideias, exemplos e conclusão. Peça que a criança prove uma ideia com um detalhe do texto.",
+          phrase: "\"Qual exemplo mostra melhor essa ideia?\"",
+          avoid: "Reescrever o parágrafo para a criança. Ajude com perguntas, não com a resposta pronta.",
+          activity: "Escolha um parágrafo e peça para adicionar um exemplo, uma explicação ou uma frase de ligação."
+        };
+      }
+      return {
+        guidance: "Nesta idade, incentive autonomia: objetivo do texto, argumento, coesão e revisão. Combine uma meta de melhoria por versão.",
+        phrase: "\"Qual é a ideia principal deste parágrafo? Ela conversa com a conclusão?\"",
+        avoid: "Corrigir estilo antes de discutir estrutura e argumento.",
+        activity: "Peça uma revisão em duas passagens: primeiro estrutura, depois linguagem."
+      };
+    }
+    function updateAdultCards() {
+      const age = Number(textValue("adultAge") || textValue("studentAge")) || 11;
+      const profile = adultProfile(age);
+      $("adultGuidance").textContent = profile.guidance;
+      $("adultPhrase").textContent = profile.phrase;
+      $("adultAvoid").textContent = profile.avoid;
+      $("adultActivity").textContent = profile.activity;
+    }
+    function student() {
+      return {
+        aluno: textValue("studentName") || "Miguel",
+        idade: currentAge()
+      };
+    }
+    function essayText() {
+      return [textValue("begin"), textValue("middle"), textValue("end")].filter(Boolean).join("\n\n");
+    }
+    function displayType() {
+      return { historia: "história", relato: "relato", opiniao: "opinião" }[state.type] || "(não escolhido)";
+    }
+    function payload() {
+      return { ...student(), tipo: state.type, tema: textValue("theme"), titulo: textValue("title"), texto: essayText() };
+    }
+    function storageGet(key, fallback = "") {
+      try {
+        return window.localStorage ? localStorage.getItem(key) || fallback : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    function storageSet(key, value) {
+      try {
+        if (window.localStorage) localStorage.setItem(key, value);
+      } catch {
+        // O app continua funcionando mesmo se o navegador bloquear armazenamento local.
+      }
+    }
+    function storageRemove(key) {
+      try {
+        if (window.localStorage) localStorage.removeItem(key);
+      } catch {
+        // Nada a fazer: rascunho local e historico sao apenas conveniencia.
+      }
+    }
+    function readLocalHistory() {
+      try {
+        return JSON.parse(storageGet(HISTORY_KEY, "[]"));
+      } catch {
+        return [];
+      }
+    }
+    function saveLocalEssay(review, adultGuidance) {
+      const row = {
+        ...payload(),
+        id: Date.now(),
+        created_at: new Date().toISOString(),
+        texto_original: essayText(),
+        review,
+        orientacao_adulto: adultGuidance
+      };
+      const rows = [row, ...readLocalHistory()].slice(0, 12);
+      storageSet(HISTORY_KEY, JSON.stringify(rows));
+    }
+    function renderHistoryRows(rows) {
+      if (!Array.isArray(rows) || !rows.length) {
+        $("history").innerHTML = "<div class='historyItem muted'>Ainda não há redações salvas para esse aluno.</div>";
+        return;
+      }
+      $("history").innerHTML = rows.map((row) => `
+        <article class="historyItem">
+          <strong>${escapeHtml(row.titulo || row.tema || "Redação")}</strong>
+          <p class="muted">${new Date(row.created_at).toLocaleString("pt-BR")}</p>
+          <h3>Orientação para o adulto</h3>
+          <p>${escapeHtml(row.orientacao_adulto || "Sem orientação registrada.")}</p>
+          <details>
+            <summary>Ver texto e feedback</summary>
+            <pre class="finalText">${escapeHtml(row.texto_original || row.texto || "")}</pre>
+            <div class="notice">${escapeHtml(row.review || "")}</div>
+          </details>
+        </article>
+      `).join("");
+    }
+    function showMessage(text) {
+      $("message").textContent = text;
+      $("message").classList.remove("hidden");
+    }
+    function hideMessage() { $("message").classList.add("hidden"); }
+
+    function render() {
+      const current = activeStep();
+      ["Student", "Type", "Theme", "Begin", "Middle", "End", "Review"].forEach((name) => {
+        $("step" + name).classList.toggle("hidden", current.id !== name.toLowerCase());
+      });
+      $("missionTitle").textContent = current.title;
+      $("missionSubtitle").textContent = current.subtitle;
+      $("missionCount").textContent = `${Math.min(state.step + 1, 6)}/6`;
+      $("bubble").textContent = current.bubble;
+      $("quickTip").textContent = current.tip;
+      $("progressBar").style.width = `${Math.min(((state.step + 1) / 6) * 100, 100)}%`;
+      $("backBtn").disabled = state.step === 0;
+      $("nextBtn").classList.toggle("hidden", current.id === "review");
+      $("validateBtn").classList.toggle("hidden", !["begin", "middle", "end"].includes(current.id));
+      $("finishBtn").classList.toggle("hidden", current.id !== "review");
+      $("fullText").textContent = `Tema: ${textValue("theme")}\nTítulo: ${textValue("title")}\nTipo: ${displayType()}\n\n${essayText()}`;
+      renderSteps();
+    }
+
+    function renderSteps() {
+      $("stepList").innerHTML = steps.slice(0, 6).map((step, index) => `
+        <div class="stepItem ${index === state.step ? "active" : ""}">
+          <span class="dot">${index + 1}</span>
+          <span>${step.title.replace(/^Missão \\d+: /, "")}</span>
+        </div>
+      `).join("");
+    }
+
+    function canAdvance() {
+      const id = activeStep().id;
+      if (id === "student") return textValue("studentName") && textValue("studentAge");
+      if (id === "type") return Boolean(state.type);
+      if (id === "theme") return textValue("theme") && textValue("title");
+      if (id === "begin") return textValue("begin").length >= ageProfile().min;
+      if (id === "middle") return textValue("middle").length >= ageProfile().min;
+      if (id === "end") return textValue("end").length >= ageProfile().min;
+      return true;
+    }
+
+    function next() {
+      hideMessage();
+      if (!canAdvance()) {
+        showMessage(`Complete esta missão antes de continuar. Para esta idade, espero ${ageProfile().label}.`);
+        return;
+      }
+      state.step = Math.min(state.step + 1, steps.length - 1);
+      render();
+    }
+
+    function back() {
+      hideMessage();
+      state.step = Math.max(state.step - 1, 0);
+      render();
+    }
+
+    async function validateStep() {
+      const current = activeStep();
+      const map = { begin: "começo", middle: "meio", end: "final" };
+      const textMap = { begin: "begin", middle: "middle", end: "end" };
+      $("validateBtn").disabled = true;
+      $("validateBtn").textContent = "Olhando...";
+      try {
+        const response = await fetch("/api/validar-etapa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload(), etapa: map[current.id], textoEtapa: textValue(textMap[current.id]) })
+        });
+        const data = await response.json();
+        showMessage(`${data.titulo || "Dica"}: ${data.mensagem || data.balao || ""}`);
+      } catch (error) {
+        const data = localValidation(textValue(textMap[current.id]));
+        showMessage(`${data.titulo}: ${data.mensagem}`);
+      } finally {
+        $("validateBtn").disabled = false;
+        $("validateBtn").textContent = "Validar etapa";
+      }
+    }
+
+    async function analyze() {
+      $("finishBtn").disabled = true;
+      $("finishBtn").textContent = "Analisando...";
+      $("childFeedback").classList.add("hidden");
+      try {
+        const response = await fetch("/api/analisar", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload())
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.details || data.error || "Erro");
+        $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca || "")}`;
+        $("childFeedback").classList.remove("hidden");
+        saveLocalEssay(data.review_crianca || "", data.orientacao_adulto || "");
+      } catch (error) {
+        const data = localReview();
+        $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca)}`;
+        $("childFeedback").classList.remove("hidden");
+        saveLocalEssay(data.review_crianca, data.orientacao_adulto);
+        showMessage("Usei uma análise simples de teste. Depois ligamos a IA para um feedback melhor.");
+      } finally {
+        $("finishBtn").disabled = false;
+        $("finishBtn").textContent = "Analisar redação";
+      }
+    }
+
+    async function loadHistory() {
+      const aluno = textValue("adultName") || textValue("studentName") || "Miguel";
+      const idade = Number(textValue("adultAge") || textValue("studentAge")) || 11;
+      $("history").innerHTML = "<div class='historyItem muted'>Carregando...</div>";
+      try {
+        const response = await fetch(`/api/ultimas?aluno=${encodeURIComponent(aluno)}&idade=${encodeURIComponent(idade)}`);
+        const rows = await response.json();
+        renderHistoryRows(rows);
+      } catch {
+        const rows = readLocalHistory().filter((row) => (row.aluno || "").toLowerCase() === aluno.toLowerCase());
+        renderHistoryRows(rows);
+      }
+    }
+
+    function reset() {
+      ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => $(id).value = "");
+      state.step = 0;
+      state.type = "";
+      document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
+      hideMessage();
+      $("childFeedback").classList.add("hidden");
+      render();
+    }
+
+    function escapeHtml(text) {
+      return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    $("nextBtn").addEventListener("click", next);
+    $("backBtn").addEventListener("click", back);
+    $("resetBtn").addEventListener("click", reset);
+    $("validateBtn").addEventListener("click", validateStep);
+    $("finishBtn").addEventListener("click", analyze);
+    $("loadHistory").addEventListener("click", loadHistory);
+    $("childMode").addEventListener("click", () => {
+      $("childView").classList.remove("hidden");
+      $("adultView").classList.add("hidden");
+      $("childMode").classList.remove("secondary");
+      $("adultMode").classList.add("secondary");
+    });
+    $("adultMode").addEventListener("click", () => {
+      $("childView").classList.add("hidden");
+      $("adultView").classList.remove("hidden");
+      $("adultMode").classList.remove("secondary");
+      $("childMode").classList.add("secondary");
+      $("adultName").value = textValue("studentName");
+      $("adultAge").value = textValue("studentAge");
+      updateAdultCards();
+      loadHistory();
+    });
+    document.querySelectorAll("[data-type]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.type = button.dataset.type;
+        document.querySelectorAll("[data-type]").forEach((item) => item.classList.remove("active"));
+        button.classList.add("active");
+        hideMessage();
+      });
+    });
+
+    ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => {
+      $(id).addEventListener("input", () => {
+        if (id === "studentAge") updateAdultCards();
+      });
+    });
+    $("adultAge").addEventListener("input", updateAdultCards);
+    $("adultName").addEventListener("input", updateAdultCards);
+
+    render();
+    updateAdultCards();
+  </script>
+</body>
+</html>
