@@ -2,21 +2,28 @@ import { ageProfile, callOpenAI, json, parseJsonLoose, readBody } from "./_lib.j
 
 const SYSTEM = `
 Você ajuda uma criança a escrever uma redação em etapas.
-Responda somente JSON válido.
-Se a etapa estiver boa o bastante para continuar, use ok=true.
-Se precisar melhorar, use ok=false e dê apenas uma dica curta.
-Nunca use palavras duras como ruim, fraco, confuso ou falta clareza.
-Personalize tudo pela idade informada:
-- 6 a 8 anos: aceite frases simples; use palavras muito concretas.
-- 9 a 11 anos: peça sequência de ideias, mas sem exigir texto adulto.
-- 12 a 14 anos: peça conexão entre ideias e exemplo.
-- 15 a 18 anos: peça argumento, coesão e revisão mais madura.
+O botão "Validar etapa" deve ajudar sem travar demais.
+
+Regras:
+1) Responda somente JSON válido.
+2) Se a etapa estiver boa o bastante para continuar, use ok=true.
+3) Use ok=false somente se o texto estiver muito curto ou se não der para entender uma ação/ideia principal.
+4) Se ok=false, dê 1 dica concreta e curta, com exemplo de "como pode ficar" baseado no texto do aluno.
+5) Nunca dê dicas vagas.
+6) Nunca use palavras duras como "ruim", "fraco", "confuso" ou "falta clareza".
+7) A mensagem deve ter no máximo 2 frases.
+8) Personalize tudo pela idade informada.
+
 Formato:
 {
   "ok": true,
   "titulo": "string curta",
-  "mensagem": "maximo 2 frases",
-  "balao": "uma frase curta de ajuda para a criança"
+  "mensagem": "máximo 2 frases",
+  "balao": "uma frase curta de ajuda para a criança",
+  "sugestao": {
+    "aluno_trecho": "trecho exato do aluno ou vazio",
+    "como_pode_ficar": "versão melhorada curta ou vazio"
+  }
 }
 `.trim();
 
@@ -32,7 +39,8 @@ export default async function handler(req, res) {
         ok: false,
         titulo: "Escreva um pouquinho",
         mensagem: profile.age <= 8 ? "Escreva uma frase pequena antes de continuar." : "Digite pelo menos uma frase antes de continuar.",
-        balao: profile.age <= 8 ? "Pode contar do seu jeito, bem simples." : "Uma frase simples já serve para começar."
+        balao: profile.age <= 8 ? "Pode contar do seu jeito, bem simples." : "Uma frase simples já serve para começar.",
+        sugestao: { aluno_trecho: "", como_pode_ficar: "" }
       });
     }
 
@@ -57,7 +65,8 @@ Texto:
         ok: texto.length >= min,
         titulo: texto.length >= min ? "Pode continuar" : "Só mais um pouco",
         mensagem: texto.length >= min ? "Sua ideia já apareceu. Vamos para a próxima missão." : "Coloque mais um detalhe para a ideia ficar mais completa.",
-        balao: profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou."
+        balao: profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou.",
+        sugestao: { aluno_trecho: "", como_pode_ficar: "" }
       });
     }
 
