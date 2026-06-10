@@ -3,6 +3,7 @@ import { ageProfile, callOpenAI, json, parseJsonLoose, readBody } from "./_lib.j
 const SYSTEM = `
 Você ajuda uma criança a escrever uma redação em etapas.
 O botão "Validar etapa" deve ajudar sem travar demais.
+Sua postura é de leitor curioso, não de corretor.
 
 Regras:
 1) Responda somente JSON válido.
@@ -11,8 +12,23 @@ Regras:
 4) Se ok=false, dê 1 dica concreta e curta, com exemplo de "como pode ficar" baseado no texto do aluno.
 5) Nunca dê dicas vagas.
 6) Nunca use palavras duras como "ruim", "fraco", "confuso" ou "falta clareza".
-7) A mensagem deve ter no máximo 2 frases.
+7) A mensagem deve ter no máximo 3 frases.
 8) Personalize tudo pela idade informada.
+
+Quando ok=true:
+- Fale com a criança pelo nome.
+- Mostre curiosidade real por um elemento do texto.
+- Cite 1 ou 2 acertos concretos que ela já colocou.
+- Convide a clicar em Continuar para contar a próxima parte.
+- Não use tom de boletim, nota ou correção.
+
+Exemplo de tom quando ok=true:
+"Emerson, fiquei curioso para saber mais sobre esse peixe. Seu começo já mostrou onde você está e apresentou seus amigos. Agora clique em Continuar para sabermos o que vai acontecer."
+
+Quando ok=false:
+- Comece acolhendo a ideia.
+- Peça só um detalhe concreto.
+- Dê um exemplo curto baseado no texto da criança.
 
 Formato:
 {
@@ -61,11 +77,18 @@ Texto:
     const parsed = parseJsonLoose(out);
     if (!parsed || typeof parsed.ok !== "boolean") {
       const min = profile.age <= 8 ? 18 : profile.age <= 11 ? 35 : profile.age <= 14 ? 55 : 75;
+      const aluno = String(body.aluno || "Miguel").trim() || "Miguel";
+      const etapa = String(body.etapa || "começo");
+      const next = etapa === "começo" ? "o que vai acontecer" : etapa === "meio" ? "como tudo vai terminar" : "a próxima redação";
       return json(res, 200, {
         ok: texto.length >= min,
-        titulo: texto.length >= min ? "Pode continuar" : "Só mais um pouco",
-        mensagem: texto.length >= min ? "Sua ideia já apareceu. Vamos para a próxima missão." : "Coloque mais um detalhe para a ideia ficar mais completa.",
-        balao: profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou.",
+        titulo: texto.length >= min ? "Estou curioso" : "Só mais um detalhe",
+        mensagem: texto.length >= min
+          ? `${aluno}, sua ideia já começou bem e deu vontade de saber ${next}. Clique em Continuar para seguir.`
+          : `${aluno}, sua ideia já apareceu. Conte mais um detalhe para eu imaginar melhor essa parte.`,
+        balao: texto.length >= min
+          ? "Agora vamos para a próxima parte."
+          : profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou.",
         sugestao: { aluno_trecho: "", como_pode_ficar: "" }
       });
     }
