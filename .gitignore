@@ -5,5 +5,6 @@ node_modules/
 .env
 .env.local
 *.log
+Chaves.txt
 .static-server-job
 .static-server-pid
