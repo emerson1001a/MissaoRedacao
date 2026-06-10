@@ -541,6 +541,10 @@
         $("childFeedback").classList.remove("hidden");
         saveLocalEssay(data.review_crianca || "", data.orientacao_adulto || "");
       } catch (error) {
+        if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
+          showMessage(`A IA ainda não conectou: ${error.message || error}`);
+          return;
+        }
         const data = localReview();
         $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca)}`;
         $("childFeedback").classList.remove("hidden");
