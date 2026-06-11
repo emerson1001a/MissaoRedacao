@@ -60,6 +60,12 @@ Formato:
 }
 `.trim();
 
+function sampleFromText(text) {
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  return clean.length <= 65 ? clean : `${clean.slice(0, 65).trim()}...`;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "Método não permitido" });
 
@@ -97,18 +103,20 @@ Texto:
       const aluno = String(body.aluno || "Miguel").trim() || "Miguel";
       const etapa = String(body.etapa || "começo");
       const next = etapa === "começo" ? "o que vai acontecer" : etapa === "meio" ? "como tudo vai terminar" : "a próxima redação";
+      const detail = etapa === "começo" ? "quem aparece e onde tudo começa" : etapa === "meio" ? "o que aconteceu depois" : "como terminou";
       const isFinal = etapa === "final";
+      const trecho = sampleFromText(texto);
       return json(res, 200, {
         ok: texto.length >= min,
         titulo: texto.length >= min ? "Estou curioso" : "Só mais um detalhe",
         mensagem: texto.length >= min
           ? isFinal
-            ? `${aluno}, gostei de como você fechou sua redação. Agora clique em Continuar para ir para a revisão final.`
-            : `${aluno}, sua ideia já começou bem e deu vontade de saber ${next}. Clique em Continuar para seguir.`
-          : `${aluno}, sua ideia já apareceu. Conte mais um detalhe para eu imaginar melhor essa parte.`,
+            ? `${aluno}, seu final já fecha a redação. Gostei de ver esta parte: "${trecho}". Agora clique em Continuar para ir para a revisão final.`
+            : `${aluno}, sua ideia já apareceu nesta parte: "${trecho}". Deu vontade de saber ${next}. Clique em Continuar para seguir.`
+          : `${aluno}, sua ideia já apareceu. Conte mais um detalhe sobre ${detail}.`,
         balao: texto.length >= min
           ? isFinal ? "Agora vamos para a revisão final." : "Agora vamos para a próxima parte."
-          : profile.age <= 8 ? "Conte mais uma coisa que aconteceu." : "Pense em quem aparece, onde acontece e o que mudou.",
+          : profile.age <= 8 ? `Conte mais uma coisa sobre ${detail}.` : `Acrescente um detalhe sobre ${detail}.`,
         sugestao: { aluno_trecho: "", como_pode_ficar: "" }
       });
     }

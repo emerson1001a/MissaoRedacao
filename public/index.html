@@ -306,16 +306,38 @@
       if (age <= 14) return { min: 35, label: "ideias com exemplo" };
       return { min: 50, label: "argumentos mais completos" };
     }
-    function localValidation(text) {
+    function sampleFromText(text) {
+      const clean = String(text || "").replace(/\s+/g, " ").trim();
+      if (!clean) return "";
+      return clean.length <= 55 ? clean : `${clean.slice(0, 55).trim()}...`;
+    }
+    function localValidation(stepId, text) {
       const profile = ageProfile();
+      const aluno = student().aluno;
+      const trecho = sampleFromText(text);
+      const isFinal = stepId === "end";
       if (text.length >= profile.min) {
-        return { titulo: "Pode continuar", mensagem: "Sua ideia já apareceu. Vamos para a próxima missão." };
+        if (isFinal) {
+          return {
+            titulo: "Final pronto",
+            mensagem: `${aluno}, seu final já fecha a redação. Gostei de ver esta parte: "${trecho}". Agora clique em Continuar para ir para a revisão final.`
+          };
+        }
+        return {
+          titulo: "Pode continuar",
+          mensagem: `${aluno}, sua ideia já apareceu nesta parte: "${trecho}". Agora clique em Continuar para seguir.`
+        };
       }
+      const detail = stepId === "begin"
+        ? "quem aparece e onde tudo começa"
+        : stepId === "middle"
+          ? "o que aconteceu depois"
+          : "como terminou";
       return {
         titulo: "Só mais um pouco",
         mensagem: currentAge() <= 8
-          ? "Conte mais uma coisa que aconteceu."
-          : "Coloque mais um detalhe para a ideia ficar mais completa."
+          ? `Gostei da sua ideia. Conte mais uma coisa sobre ${detail}.`
+          : `Sua ideia já começou. Acrescente um detalhe sobre ${detail}, mantendo o que você escreveu.`
       };
     }
     function localReview() {
@@ -543,7 +565,7 @@
         showMessage(data.mensagem || data.balao || "Pode continuar.");
         if (data.ok === true) state.validatedSteps[current.id] = validationSignature(current.id);
       } catch (error) {
-        const data = localValidation(textValue(textMap[current.id]));
+        const data = localValidation(current.id, textValue(textMap[current.id]));
         showMessage(data.mensagem);
         if (textValue(textMap[current.id]).length >= ageProfile().min) state.validatedSteps[current.id] = validationSignature(current.id);
       } finally {
