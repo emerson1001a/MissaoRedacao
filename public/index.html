@@ -51,6 +51,7 @@
     button.secondary { background: #e8edf7; color: var(--ink); }
     button.good { background: var(--green); }
     button.ghost { background: transparent; color: var(--blue); border: 1px solid var(--blue); }
+    button.blank { background: #fff; color: var(--muted); border: 1px solid var(--line); }
     button:disabled { opacity: .5; cursor: not-allowed; }
 
     .grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
@@ -287,9 +288,12 @@
     ];
 
     const HISTORY_KEY = "missao-redacao-historico";
-    const state = { step: 0, type: "", validating: false, analyzing: false };
+    const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {} };
 
     function activeStep() { return steps[state.step]; }
+    function isWritingStep(id = activeStep().id) {
+      return ["begin", "middle", "end"].includes(id);
+    }
     function textValue(id) { return ($(id).value || "").trim(); }
     function currentAge() {
       const age = Number(textValue("studentAge"));
@@ -447,6 +451,19 @@
       $("message").classList.remove("hidden");
     }
     function hideMessage() { $("message").classList.add("hidden"); }
+    function textKeyForStep(id) {
+      return { begin: "begin", middle: "middle", end: "end" }[id] || "";
+    }
+    function validationSignature(id) {
+      return `${id}:${textValue(textKeyForStep(id))}`;
+    }
+    function isCurrentStepValidated() {
+      const id = activeStep().id;
+      return isWritingStep(id) && state.validatedSteps[id] === validationSignature(id);
+    }
+    function resetValidationFor(id) {
+      if (id) delete state.validatedSteps[id];
+    }
 
     function render() {
       const current = activeStep();
@@ -463,6 +480,12 @@
       $("nextBtn").classList.toggle("hidden", current.id === "review");
       $("validateBtn").classList.toggle("hidden", !["begin", "middle", "end"].includes(current.id));
       $("finishBtn").classList.toggle("hidden", current.id !== "review");
+      const needsValidation = isWritingStep(current.id);
+      const validated = isCurrentStepValidated();
+      $("nextBtn").disabled = needsValidation && !validated;
+      $("nextBtn").classList.toggle("blank", needsValidation && !validated);
+      $("validateBtn").classList.toggle("ghost", needsValidation && validated);
+      $("validateBtn").disabled = needsValidation && validated;
       $("fullText").textContent = `Tema: ${textValue("theme")}\nTítulo: ${textValue("title")}\nTipo: ${displayType()}\n\n${essayText()}`;
       renderSteps();
     }
@@ -478,6 +501,7 @@
 
     function canAdvance() {
       const id = activeStep().id;
+      if (isWritingStep(id)) return isCurrentStepValidated();
       if (id === "student") return textValue("studentName") && textValue("studentAge");
       if (id === "type") return Boolean(state.type);
       if (id === "theme") return textValue("theme") && textValue("title");
@@ -517,12 +541,15 @@
         });
         const data = await response.json();
         showMessage(data.mensagem || data.balao || "Pode continuar.");
+        if (data.ok === true) state.validatedSteps[current.id] = validationSignature(current.id);
       } catch (error) {
         const data = localValidation(textValue(textMap[current.id]));
         showMessage(data.mensagem);
+        if (textValue(textMap[current.id]).length >= ageProfile().min) state.validatedSteps[current.id] = validationSignature(current.id);
       } finally {
         $("validateBtn").disabled = false;
         $("validateBtn").textContent = "Validar etapa";
+        render();
       }
     }
 
@@ -575,6 +602,7 @@
       ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => $(id).value = "");
       state.step = 0;
       state.type = "";
+      state.validatedSteps = {};
       document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
       hideMessage();
       $("childFeedback").classList.add("hidden");
@@ -623,7 +651,10 @@
 
     ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => {
       $(id).addEventListener("input", () => {
+        const stepByInput = { begin: "begin", middle: "middle", end: "end" }[id];
+        if (stepByInput) resetValidationFor(stepByInput);
         if (id === "studentAge") updateAdultCards();
+        render();
       });
     });
     $("adultAge").addEventListener("input", updateAdultCards);
