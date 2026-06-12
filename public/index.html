@@ -107,18 +107,19 @@
       body { background: #fff; color: #111827; }
       .app { display: none; }
       .printArea { display: block; padding: 0; font-family: Arial, system-ui, sans-serif; }
-      @page { size: A4; margin: 12mm; }
-      .sheet { page-break-after: always; }
-      .sheetHeader { border: 2px solid #111827; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-      .sheetHeader h1 { font-size: 24px; margin: 0 0 6px; }
+      @page { size: A4; margin: 10mm; }
+      .sheet { page-break-after: avoid; }
+      .sheetHeader { border: 2px solid #111827; border-radius: 10px; padding: 8px; margin-bottom: 6px; }
+      .sheetHeader h1 { font-size: 22px; margin: 0 0 4px; }
+      .sheetHeader p { margin-bottom: 6px; font-size: 12px; }
       .sheetMeta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-size: 13px; }
-      .sheetMission { border: 1px solid #9ca3af; border-radius: 12px; padding: 10px; margin-top: 10px; break-inside: avoid; }
-      .sheetMission h2 { font-size: 17px; margin-bottom: 4px; }
-      .sheetTip { font-size: 13px; margin-bottom: 8px; }
-      .drawBox { height: 72px; border: 1px dashed #9ca3af; border-radius: 10px; margin-bottom: 8px; display: grid; place-items: center; color: #6b7280; font-size: 12px; }
-      .writeLines { display: grid; gap: 10px; }
-      .writeLine { border-bottom: 1px solid #6b7280; height: 20px; }
-      .sheetChecklist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 12px; font-size: 13px; }
+      .sheetMission { border: 1px solid #9ca3af; border-radius: 10px; padding: 7px; margin-top: 6px; break-inside: avoid; }
+      .sheetMission h2 { font-size: 15px; margin-bottom: 3px; }
+      .sheetTip { font-size: 12px; margin-bottom: 5px; }
+      .drawBox { height: 42px; border: 1px dashed #9ca3af; border-radius: 8px; margin-bottom: 5px; display: grid; place-items: center; color: #6b7280; font-size: 11px; }
+      .writeLines { display: grid; gap: 5px; }
+      .writeLine { border-bottom: 1px solid #6b7280; height: 15px; }
+      .sheetChecklist { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px 10px; margin-top: 7px; font-size: 11px; }
     }
 
     @media (max-width: 860px) {
@@ -528,7 +529,7 @@
       }
       if (age <= 11) {
         return {
-          lines: 5,
+          lines: 4,
           intro: "Organize a redação em começo, meio e final, com calma.",
           begin: "Apresente quem aparece, onde está e como tudo começa.",
           middle: "Conte o acontecimento principal. Mostre o que mudou ou o que deixou a história interessante.",
@@ -537,7 +538,7 @@
       }
       if (age <= 14) {
         return {
-          lines: 6,
+          lines: 4,
           intro: "Use detalhes para ligar as ideias e deixar o leitor acompanhar seu pensamento.",
           begin: "Mostre a situação inicial e dê um detalhe que ajude o leitor a imaginar a cena.",
           middle: "Desenvolva o acontecimento principal com ação, explicação ou exemplo.",
@@ -545,7 +546,7 @@
         };
       }
       return {
-        lines: 7,
+        lines: 5,
         intro: "Planeje o objetivo do texto e cuide da ligação entre as partes.",
         begin: "Apresente o contexto e a ideia que vai guiar a redação.",
         middle: "Desenvolva com detalhes, exemplos ou argumentos ligados ao tema.",
