@@ -100,6 +100,26 @@
 
     .adultGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
     .historyItem { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; margin-top: 10px; }
+    .worksheetActions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+    .printArea { display: none; }
+
+    @media print {
+      body { background: #fff; color: #111827; }
+      .app { display: none; }
+      .printArea { display: block; padding: 0; font-family: Arial, system-ui, sans-serif; }
+      @page { size: A4; margin: 12mm; }
+      .sheet { page-break-after: always; }
+      .sheetHeader { border: 2px solid #111827; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+      .sheetHeader h1 { font-size: 24px; margin: 0 0 6px; }
+      .sheetMeta { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-size: 13px; }
+      .sheetMission { border: 1px solid #9ca3af; border-radius: 12px; padding: 10px; margin-top: 10px; break-inside: avoid; }
+      .sheetMission h2 { font-size: 17px; margin-bottom: 4px; }
+      .sheetTip { font-size: 13px; margin-bottom: 8px; }
+      .drawBox { height: 72px; border: 1px dashed #9ca3af; border-radius: 10px; margin-bottom: 8px; display: grid; place-items: center; color: #6b7280; font-size: 12px; }
+      .writeLines { display: grid; gap: 10px; }
+      .writeLine { border-bottom: 1px solid #6b7280; height: 20px; }
+      .sheetChecklist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-top: 12px; font-size: 13px; }
+    }
 
     @media (max-width: 860px) {
       .grid, .adultGrid { grid-template-columns: 1fr; }
@@ -167,6 +187,9 @@
                 <label>Titulo</label>
                 <input id="title" placeholder="Ex.: O recreio misterioso">
               </div>
+              <div class="worksheetActions">
+                <button id="printWorksheetBtn" type="button" class="secondary">Imprimir folha</button>
+              </div>
             </div>
 
             <div id="stepBegin" class="hidden">
@@ -219,6 +242,11 @@
           <div class="sideCard">
             <h3>Dica rápida</h3>
             <p class="muted" id="quickTip">Uma frase boa já abre caminho para outra.</p>
+          </div>
+          <div class="sideCard">
+            <h3>Folha para escrever</h3>
+            <p class="muted">Gere uma folha com espaço para desenho e escrita.</p>
+            <button id="printWorksheetSideBtn" type="button" class="secondary">Imprimir folha</button>
           </div>
         </aside>
       </main>
@@ -274,6 +302,7 @@
       </main>
     </div>
   </div>
+  <div id="printArea" class="printArea"></div>
 
   <script>
     const $ = (id) => document.getElementById(id);
@@ -487,6 +516,99 @@
       if (id) delete state.validatedSteps[id];
     }
 
+    function worksheetProfile(age) {
+      if (age <= 8) {
+        return {
+          lines: 3,
+          intro: "Use desenhos e frases pequenas. Uma boa frase já vale muito.",
+          begin: "Desenhe quem aparece e escreva onde a história começa.",
+          middle: "Mostre o que aconteceu depois. Pode ser uma surpresa, uma descoberta ou um problema.",
+          end: "Conte como terminou. O personagem ficou feliz, aprendeu algo ou resolveu o problema?"
+        };
+      }
+      if (age <= 11) {
+        return {
+          lines: 5,
+          intro: "Organize a redação em começo, meio e final, com calma.",
+          begin: "Apresente quem aparece, onde está e como tudo começa.",
+          middle: "Conte o acontecimento principal. Mostre o que mudou ou o que deixou a história interessante.",
+          end: "Feche a redação mostrando como terminou e qual sensação ficou."
+        };
+      }
+      if (age <= 14) {
+        return {
+          lines: 6,
+          intro: "Use detalhes para ligar as ideias e deixar o leitor acompanhar seu pensamento.",
+          begin: "Mostre a situação inicial e dê um detalhe que ajude o leitor a imaginar a cena.",
+          middle: "Desenvolva o acontecimento principal com ação, explicação ou exemplo.",
+          end: "Retome a ideia principal e termine sem abrir uma nova história."
+        };
+      }
+      return {
+        lines: 7,
+        intro: "Planeje o objetivo do texto e cuide da ligação entre as partes.",
+        begin: "Apresente o contexto e a ideia que vai guiar a redação.",
+        middle: "Desenvolva com detalhes, exemplos ou argumentos ligados ao tema.",
+        end: "Conclua retomando o ponto principal e deixando uma ideia clara para o leitor."
+      };
+    }
+
+    function worksheetHtml() {
+      const name = textValue("studentName");
+      const age = currentAge();
+      const theme = textValue("theme");
+      const title = textValue("title") || "A escolher";
+      const type = displayType();
+      const profile = worksheetProfile(age);
+      const themeText = theme ? `No tema "${theme}", pense no que o leitor precisa imaginar ou entender.` : "Escolha um tema antes de começar.";
+      const mission = (number, titleText, tip) => `
+        <section class="sheetMission">
+          <h2>Missão ${number}: ${escapeHtml(titleText)}</h2>
+          <p class="sheetTip">${escapeHtml(themeText)} ${escapeHtml(tip)}</p>
+          <div class="drawBox">Espaço para desenho ou plano da ideia</div>
+          <div class="writeLines">${Array.from({ length: profile.lines }, () => '<div class="writeLine"></div>').join("")}</div>
+        </section>
+      `;
+
+      return `
+        <article class="sheet">
+          <header class="sheetHeader">
+            <h1>Missão Redação</h1>
+            <p>${escapeHtml(profile.intro)}</p>
+            <div class="sheetMeta">
+              <div><strong>Nome:</strong> ${escapeHtml(name || "________________")}</div>
+              <div><strong>Idade:</strong> ${escapeHtml(String(age))}</div>
+              <div><strong>Tema:</strong> ${escapeHtml(theme || "________________")}</div>
+              <div><strong>Título:</strong> ${escapeHtml(title)}</div>
+              <div><strong>Tipo:</strong> ${escapeHtml(type)}</div>
+              <div><strong>Data:</strong> ____ / ____ / ______</div>
+            </div>
+          </header>
+          ${mission(1, "começo", profile.begin)}
+          ${mission(2, "meio", profile.middle)}
+          ${mission(3, "final", profile.end)}
+          <section class="sheetChecklist">
+            <label><input type="checkbox"> Coloquei título.</label>
+            <label><input type="checkbox"> Meu texto tem começo.</label>
+            <label><input type="checkbox"> Meu texto tem meio.</label>
+            <label><input type="checkbox"> Meu texto tem final.</label>
+            <label><input type="checkbox"> Reli com atenção.</label>
+            <label><input type="checkbox"> Fiz meu melhor hoje.</label>
+          </section>
+        </article>
+      `;
+    }
+
+    function printWorksheet() {
+      hideMessage();
+      if (!textValue("studentName") || !textValue("studentAge") || !textValue("theme")) {
+        showMessage("Preencha pelo menos nome, idade e tema para gerar a folha.");
+        return;
+      }
+      $("printArea").innerHTML = worksheetHtml();
+      window.setTimeout(() => window.print(), 50);
+    }
+
     function render() {
       const current = activeStep();
       ["Student", "Type", "Theme", "Begin", "Middle", "End", "Review"].forEach((name) => {
@@ -526,7 +648,7 @@
       if (isWritingStep(id)) return isCurrentStepValidated();
       if (id === "student") return textValue("studentName") && textValue("studentAge");
       if (id === "type") return Boolean(state.type);
-      if (id === "theme") return textValue("theme") && textValue("title");
+      if (id === "theme") return textValue("theme");
       if (id === "begin") return textValue("begin").length >= ageProfile().min;
       if (id === "middle") return textValue("middle").length >= ageProfile().min;
       if (id === "end") return textValue("end").length >= ageProfile().min;
@@ -645,6 +767,8 @@
     $("resetBtn").addEventListener("click", reset);
     $("validateBtn").addEventListener("click", validateStep);
     $("finishBtn").addEventListener("click", analyze);
+    $("printWorksheetBtn").addEventListener("click", printWorksheet);
+    $("printWorksheetSideBtn").addEventListener("click", printWorksheet);
     $("loadHistory").addEventListener("click", loadHistory);
     $("childMode").addEventListener("click", () => {
       $("childView").classList.remove("hidden");
