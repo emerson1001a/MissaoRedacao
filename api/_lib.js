@@ -95,27 +95,46 @@ export async function getOrCreateStudent(db, nome = "Miguel", idade = 11) {
   return data.id;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function callOpenAI(system, user) {
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY ausente");
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      input: [
-        { role: "system", content: system },
-        { role: "user", content: user }
-      ]
-    })
-  });
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+    try {
+      const response = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+          input: [
+            { role: "system", content: system },
+            { role: "user", content: user }
+          ]
+        })
+      });
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || `OpenAI HTTP ${response.status}`);
-  return extractOutputText(data);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.error?.message || `OpenAI HTTP ${response.status}`);
+      return extractOutputText(data);
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await sleep(600);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw lastError;
 }
 
 export function extractOutputText(data) {

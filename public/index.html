@@ -713,16 +713,15 @@
         $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca || "")}`;
         $("childFeedback").classList.remove("hidden");
         saveLocalEssay(data.review_crianca || "", data.orientacao_adulto || "");
-      } catch (error) {
-        if (location.hostname !== "localhost" && location.hostname !== "127.0.0.1") {
-          showMessage(`A IA ainda não conectou: ${error.message || error}`);
-          return;
+        if (data.fallback) {
+          showMessage("Usei uma analise segura para finalizar. A redacao ficou registrada para acompanhamento.");
         }
+      } catch (error) {
         const data = localReview();
         $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca)}`;
         $("childFeedback").classList.remove("hidden");
         saveLocalEssay(data.review_crianca, data.orientacao_adulto);
-        showMessage("Usei uma análise simples de teste. Depois ligamos a IA para um feedback melhor.");
+        showMessage("Usei uma análise simples para finalizar. Depois tentamos uma análise mais completa.");
       } finally {
         $("finishBtn").disabled = false;
         $("finishBtn").textContent = "Analisar redação";

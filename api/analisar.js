@@ -58,6 +58,51 @@ Formato:
 }
 `.trim();
 
+function fallbackReview(body, texto, profile) {
+  const aluno = String(body.aluno || "Miguel").trim() || "Miguel";
+  const tipo = String(body.tipo || "historia").trim() || "historia";
+  const tema = String(body.tema || "").trim();
+  const titulo = String(body.titulo || "").trim();
+  const clean = texto.replace(/\s+/g, " ").trim();
+  const trecho = clean.length <= 90 ? clean : `${clean.slice(0, 90).trim()}...`;
+
+  const childTip = profile.age <= 8
+    ? "Na proxima historia, conte uma coisa bem importante que aconteceu e como voce se sentiu."
+    : profile.age <= 11
+      ? "Na proxima historia, escolha uma cena importante e mostre um pouco mais o que os personagens fizeram."
+      : "Na proxima redacao, escolha uma ideia central e fortaleca com mais detalhe, exemplo ou ligacao entre os paragrafos.";
+
+  return {
+    review_crianca: `${aluno}, gostei de ver que voce terminou seu texto e manteve uma sequencia de ideias.\n\n${childTip}\n\nVoce concluiu uma redacao completa. Parabens pelo capricho!`,
+    orientacao_adulto: [
+      `A redacao de ${aluno} ja mostra uma producao completa para o perfil de ${profile.label}.`,
+      `Ponto positivo: ha uma tentativa de organizar o texto em uma sequencia, com tema${tema ? ` "${tema}"` : ""}${titulo ? ` e titulo "${titulo}"` : ""}.`,
+      "Prioridade pedagogica: na proxima conversa, ajude a crianca a escolher uma cena do texto e detalhar melhor quem fez o que, onde aconteceu e por que isso foi importante.",
+      "Perguntas uteis: qual foi a parte mais importante? O que o personagem sentiu nesse momento? Como o leitor percebe que a historia terminou?",
+      "Evite reescrever o texto pela crianca. Primeiro valorize a ideia, depois escolha uma melhoria pequena para revisar.",
+      `Trecho observado: "${trecho}". Tipo escolhido: ${tipo}.`
+    ].join("\n\n"),
+    fallback: true
+  };
+}
+
+async function saveReview(body, texto, parsed) {
+  if (!hasSupabaseConfig()) return;
+
+  const db = supabaseAdmin();
+  const alunoId = await getOrCreateStudent(db, body.aluno, body.idade);
+  const { error } = await db.from("redacoes").insert({
+    aluno_id: alunoId,
+    tipo: body.tipo || "",
+    tema: body.tema || "",
+    titulo: body.titulo || "",
+    texto_original: texto,
+    review: parsed.review_crianca || "",
+    orientacao_adulto: parsed.orientacao_adulto || ""
+  });
+  if (error) throw error;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "Método não permitido" });
 
@@ -81,26 +126,21 @@ Texto:
 """${texto}"""
 `.trim();
 
-    const out = await callOpenAI(SYSTEM, user);
-    const parsed = parseJsonLoose(out) || {
+    let parsed;
+    try {
+      const out = await callOpenAI(SYSTEM, user);
+      parsed = parseJsonLoose(out) || {
       review_crianca: out || "Gostei do seu esforço. Você terminou sua redação e isso já é uma conquista.",
       orientacao_adulto: "Converse sobre uma melhoria para a próxima redação e elogie o progresso antes de corrigir."
-    };
-
-    if (hasSupabaseConfig()) {
-      const db = supabaseAdmin();
-      const alunoId = await getOrCreateStudent(db, body.aluno, body.idade);
-      const { error } = await db.from("redacoes").insert({
-        aluno_id: alunoId,
-        tipo: body.tipo || "",
-        tema: body.tema || "",
-        titulo: body.titulo || "",
-        texto_original: texto,
-        review: parsed.review_crianca || "",
-        orientacao_adulto: parsed.orientacao_adulto || ""
-      });
-      if (error) throw error;
+      };
+    } catch (error) {
+      parsed = fallbackReview(body, texto, profile);
+      parsed.ai_error = String(error.message || error);
     }
+
+    saveReview(body, texto, parsed).catch((error) => {
+      console.error("Erro ao salvar redacao", error);
+    });
 
     return json(res, 200, parsed);
   } catch (error) {
