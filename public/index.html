@@ -467,6 +467,29 @@
         return [];
       }
     }
+    function localHistoryFor(aluno, idade) {
+      const cleanName = String(aluno || "").trim().toLowerCase();
+      const cleanAge = Number(idade) || 11;
+      return readLocalHistory().filter((row) => {
+        return String(row.aluno || "").trim().toLowerCase() === cleanName && (Number(row.idade) || 11) === cleanAge;
+      });
+    }
+    function mergeHistoryRows(remoteRows, localRows) {
+      const seen = new Set();
+      return [...(remoteRows || []), ...(localRows || [])]
+        .filter((row) => {
+          const key = [
+            row.id || "",
+            row.created_at || "",
+            row.titulo || "",
+            row.texto_original || row.texto || ""
+          ].join("|");
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    }
     function saveLocalEssay(review, adultGuidance) {
       const row = {
         ...payload(),
@@ -732,13 +755,13 @@
       const aluno = textValue("adultName") || textValue("studentName") || "Miguel";
       const idade = Number(textValue("adultAge") || textValue("studentAge")) || 11;
       $("history").innerHTML = "<div class='historyItem muted'>Carregando...</div>";
+      const localRows = localHistoryFor(aluno, idade);
       try {
         const response = await fetch(`/api/ultimas?aluno=${encodeURIComponent(aluno)}&idade=${encodeURIComponent(idade)}`);
         const rows = await response.json();
-        renderHistoryRows(rows);
+        renderHistoryRows(mergeHistoryRows(Array.isArray(rows) ? rows : [], localRows));
       } catch {
-        const rows = readLocalHistory().filter((row) => (row.aluno || "").toLowerCase() === aluno.toLowerCase());
-        renderHistoryRows(rows);
+        renderHistoryRows(localRows);
       }
     }
 

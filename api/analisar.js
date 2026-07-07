@@ -87,7 +87,7 @@ function fallbackReview(body, texto, profile) {
 }
 
 async function saveReview(body, texto, parsed) {
-  if (!hasSupabaseConfig()) return;
+  if (!hasSupabaseConfig()) return false;
 
   const db = supabaseAdmin();
   const alunoId = await getOrCreateStudent(db, body.aluno, body.idade);
@@ -101,6 +101,7 @@ async function saveReview(body, texto, parsed) {
     orientacao_adulto: parsed.orientacao_adulto || ""
   });
   if (error) throw error;
+  return true;
 }
 
 export default async function handler(req, res) {
@@ -138,9 +139,13 @@ Texto:
       parsed.ai_error = String(error.message || error);
     }
 
-    saveReview(body, texto, parsed).catch((error) => {
+    try {
+      parsed.saved = await saveReview(body, texto, parsed);
+    } catch (error) {
+      parsed.saved = false;
+      parsed.save_error = String(error.message || error);
       console.error("Erro ao salvar redacao", error);
-    });
+    }
 
     return json(res, 200, parsed);
   } catch (error) {
