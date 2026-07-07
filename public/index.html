@@ -140,7 +140,7 @@
           </div>
         </div>
         <nav class="modeBar">
-          <button id="childMode">Crianca</button>
+          <button id="childMode">Criança</button>
           <button id="adultMode" class="secondary">Pai ou professor</button>
         </nav>
       </header>
@@ -230,6 +230,7 @@
               <button id="nextBtn">Continuar</button>
               <button id="validateBtn" class="ghost hidden">Validar etapa</button>
               <button id="finishBtn" class="good hidden">Analisar redação</button>
+              <button id="returnPortalBtn" class="good hidden" type="button">Entregar para o adulto</button>
               <button id="resetBtn" class="secondary">Limpar</button>
             </div>
           </div>
@@ -318,7 +319,16 @@
     ];
 
     const HISTORY_KEY = "missao-redacao-historico";
-    const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {} };
+    const params = new URLSearchParams(window.location.search);
+    const portal = {
+      childId: params.get("child_id") || "",
+      childName: params.get("child_name") || "",
+      token: params.get("portal_event_token") || "",
+      returnUrl: params.get("portal_return_url") || ""
+    };
+    portal.enabled = Boolean(portal.token && portal.returnUrl);
+
+    const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {}, portalEventSaved: false };
 
     function activeStep() { return steps[state.step]; }
     function isWritingStep(id = activeStep().id) {
@@ -438,6 +448,66 @@
     }
     function payload() {
       return { ...student(), tipo: state.type, tema: textValue("theme"), titulo: textValue("title"), texto: essayText() };
+    }
+    function portalReturnUrl(status = "activity_saved") {
+      if (!portal.returnUrl) return "";
+      const url = new URL(portal.returnUrl);
+      url.searchParams.set("portal_status", status);
+      url.searchParams.set("service", "redacao");
+      if (portal.childId) url.searchParams.set("child_id", portal.childId);
+      return url.toString();
+    }
+    function returnToPortal(status = "activity_saved") {
+      const url = portalReturnUrl(status);
+      if (url) window.location.href = url;
+    }
+    async function sendPortalEvent(data) {
+      if (!portal.enabled || state.portalEventSaved) return false;
+      const returnUrl = new URL(portal.returnUrl);
+      const words = essayText().split(/\s+/).filter(Boolean).length;
+      const response = await fetch(`${returnUrl.origin}/api/activity-events`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Portal-Activity-Token": portal.token
+        },
+        body: JSON.stringify({
+          portal_event_token: portal.token,
+          service: "redacao",
+          activity_type: "analise_final",
+          title: textValue("title") || textValue("theme") || "Redação concluída",
+          metrics: {
+            words,
+            chars: essayText().length,
+            type: state.type || "",
+            theme: textValue("theme") || ""
+          },
+          feedback: {
+            child: {
+              tone: "positive",
+              message: data.review_crianca || "",
+              next_step: "Entregar a atividade para o adulto acompanhar no portal."
+            },
+            adult: {
+              summary: data.orientacao_adulto || "",
+              strengths: [],
+              attention_points: [],
+              recipe: data.orientacao_adulto ? [data.orientacao_adulto] : [],
+              avoid_saying: ["Não reescreva tudo pela criança. Escolha uma melhoria pequena por vez."]
+            }
+          },
+          artifacts: {
+            text: essayText(),
+            title: textValue("title") || "",
+            theme: textValue("theme") || "",
+            type: state.type || ""
+          }
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.ok === false) throw new Error(result.message || "Não foi possível enviar ao portal.");
+      state.portalEventSaved = true;
+      return true;
     }
     function storageGet(key, fallback = "") {
       try {
@@ -641,7 +711,9 @@
       $("missionTitle").textContent = current.title;
       $("missionSubtitle").textContent = current.subtitle;
       $("missionCount").textContent = `${Math.min(state.step + 1, 6)}/6`;
-      $("bubble").textContent = current.bubble;
+      $("bubble").textContent = portal.enabled && current.id === "student"
+        ? `${portal.childName || "Vamos começar"}, faça a redação por etapas. No final, entregue para o adulto acompanhar no portal.`
+        : current.bubble;
       $("quickTip").textContent = current.tip;
       $("progressBar").style.width = `${Math.min(((state.step + 1) / 6) * 100, 100)}%`;
       $("backBtn").disabled = state.step === 0;
@@ -725,6 +797,7 @@
       $("finishBtn").disabled = true;
       $("finishBtn").textContent = "Analisando...";
       $("childFeedback").classList.add("hidden");
+      $("returnPortalBtn").classList.add("hidden");
       try {
         const response = await fetch("/api/analisar", {
           method: "POST",
@@ -736,7 +809,17 @@
         $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca || "")}`;
         $("childFeedback").classList.remove("hidden");
         saveLocalEssay(data.review_crianca || "", data.orientacao_adulto || "");
-        if (data.fallback) {
+        if (portal.enabled) {
+          try {
+            await sendPortalEvent(data);
+            $("returnPortalBtn").classList.remove("hidden");
+            showMessage("Redação registrada no Portal Educacional. Agora entregue para o adulto acompanhar.");
+          } catch (portalError) {
+            $("returnPortalBtn").classList.remove("hidden");
+            showMessage(`A redação ficou pronta, mas ainda não consegui registrar no portal: ${portalError.message}`);
+          }
+        }
+        if (data.fallback && !portal.enabled) {
           showMessage("Usei uma analise segura para finalizar. A redacao ficou registrada para acompanhamento.");
         }
       } catch (error) {
@@ -744,7 +827,18 @@
         $("childFeedback").innerHTML = `<strong>Dica para você:</strong><br>${escapeHtml(data.review_crianca)}`;
         $("childFeedback").classList.remove("hidden");
         saveLocalEssay(data.review_crianca, data.orientacao_adulto);
-        showMessage("Usei uma análise simples para finalizar. Depois tentamos uma análise mais completa.");
+        if (portal.enabled) {
+          try {
+            await sendPortalEvent(data);
+            $("returnPortalBtn").classList.remove("hidden");
+            showMessage("Redação registrada no Portal Educacional. Agora entregue para o adulto acompanhar.");
+          } catch (portalError) {
+            $("returnPortalBtn").classList.remove("hidden");
+            showMessage(`Usei uma análise simples, mas ainda não consegui registrar no portal: ${portalError.message}`);
+          }
+        } else {
+          showMessage("Usei uma análise simples para finalizar. Depois tentamos uma análise mais completa.");
+        }
       } finally {
         $("finishBtn").disabled = false;
         $("finishBtn").textContent = "Analisar redação";
@@ -766,13 +860,17 @@
     }
 
     function reset() {
-      ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => $(id).value = "");
+      ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => {
+        if (portal.enabled && id === "studentName") return;
+        $(id).value = "";
+      });
       state.step = 0;
       state.type = "";
       state.validatedSteps = {};
       document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
       hideMessage();
       $("childFeedback").classList.add("hidden");
+      $("returnPortalBtn").classList.add("hidden");
       render();
     }
 
@@ -790,6 +888,7 @@
     $("resetBtn").addEventListener("click", reset);
     $("validateBtn").addEventListener("click", validateStep);
     $("finishBtn").addEventListener("click", analyze);
+    $("returnPortalBtn").addEventListener("click", () => returnToPortal(state.portalEventSaved ? "activity_saved" : "activity_pending"));
     $("printWorksheetBtn").addEventListener("click", printWorksheet);
     $("printWorksheetSideBtn").addEventListener("click", printWorksheet);
     $("loadHistory").addEventListener("click", loadHistory);
@@ -829,6 +928,18 @@
     $("adultAge").addEventListener("input", updateAdultCards);
     $("adultName").addEventListener("input", updateAdultCards);
 
+    function setupPortalMode() {
+      if (!portal.enabled) return;
+      document.body.classList.add("portal-mode");
+      $("adultMode").classList.add("hidden");
+      $("childMode").classList.add("hidden");
+      if (portal.childName) $("studentName").value = portal.childName;
+      $("bubble").textContent = portal.childName
+        ? `${portal.childName}, vamos fazer uma redação por etapas. No final, você entrega para o adulto acompanhar.`
+        : "Vamos fazer uma redação por etapas. No final, você entrega para o adulto acompanhar.";
+    }
+
+    setupPortalMode();
     render();
     updateAdultCards();
   </script>
