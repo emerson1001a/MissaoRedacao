@@ -324,9 +324,11 @@
       childId: params.get("child_id") || "",
       childName: params.get("child_name") || "",
       token: params.get("portal_event_token") || "",
+      childToken: params.get("portal_child_token") || "",
+      assignmentItemId: params.get("assignment_item_id") || "",
       returnUrl: params.get("portal_return_url") || ""
     };
-    portal.enabled = Boolean(portal.token && portal.returnUrl);
+    portal.enabled = Boolean((portal.token || portal.childToken) && portal.returnUrl);
 
     const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {}, portalEventSaved: false };
 
@@ -465,15 +467,18 @@
       if (!portal.enabled || state.portalEventSaved) return false;
       const returnUrl = new URL(portal.returnUrl);
       const words = essayText().split(/\s+/).filter(Boolean).length;
+      const headers = { "Content-Type": "application/json" };
+      if (portal.token) headers["X-Portal-Activity-Token"] = portal.token;
+      if (portal.childToken) headers["X-Portal-Child-Token"] = portal.childToken;
       const response = await fetch(`${returnUrl.origin}/api/activity-events`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Portal-Activity-Token": portal.token
-        },
+        headers,
         body: JSON.stringify({
           portal_event_token: portal.token,
+          portal_child_token: portal.childToken,
+          child_id: portal.childId,
           service: "redacao",
+          assignment_item_id: portal.assignmentItemId,
           activity_type: "analise_final",
           title: textValue("title") || textValue("theme") || "Redação concluída",
           metrics: {
