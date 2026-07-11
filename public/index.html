@@ -82,7 +82,7 @@
     textarea { min-height: 180px; resize: vertical; line-height: 1.45; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); }
+    .chip { border: 1px solid #bdd2ff; background: var(--soft-blue); color: var(--blue); box-shadow: 0 8px 18px rgba(37, 99, 235, .10); }
     .chip.active { background: var(--orange); color: #fff; border-color: var(--orange); }
     .hidden { display: none !important; }
     .notice { padding: 12px; border-radius: 12px; background: var(--soft-green); border: 1px solid #ccebd6; margin-top: 12px; }
@@ -309,12 +309,12 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const steps = [
-      { id: "student", title: "Missão 1: quem está escrevendo?", subtitle: "Vamos preparar sua aventura de escrita.", bubble: "Escreva seu nome e sua idade para eu te conhecer melhor.", tip: "Preencha nome e idade para eu adaptar as dicas." },
-      { id: "type", title: "Missão 2: escolha o tipo", subtitle: "Cada tipo pede um jeito diferente de escrever.", bubble: "Agora escolha o tipo de texto que você quer escrever: história, relato ou opinião.", tip: "Se tiver personagem e acontecimentos, escolha história." },
-      { id: "theme", title: "Missão 3: tema e título", subtitle: "Agora damos nome para a ideia.", bubble: "Tema é o assunto da redação. Título é o nome bonito que você dá para o seu texto.", tip: "Exemplo: o tema pode ser amizade. O título pode ser Meu melhor amigo." },
-      { id: "begin", title: "Missão 4: começo", subtitle: "Mostre onde tudo começa.", bubble: "Escreva o começo. Conte quem aparece, onde está e como tudo começa.", tip: "Pergunte: quem? onde? quando?" },
-      { id: "middle", title: "Missão 5: meio", subtitle: "A parte em que as coisas acontecem.", bubble: "Escreva o meio. Conte o que aconteceu depois ou explique melhor sua ideia.", tip: "Use depois, então, por isso ou por exemplo." },
-      { id: "end", title: "Missão 6: final", subtitle: "Feche a redação com calma.", bubble: "Escreva o final. Mostre como terminou ou qual ideia você quer deixar.", tip: "Não precisa inventar coisa nova. Feche o que você já contou." },
+      { id: "student", title: "Preparar Redação", subtitle: "Vamos preparar sua aventura de escrita.", bubble: "Escreva seu nome e sua idade para eu te conhecer melhor.", tip: "Preencha nome e idade para eu adaptar as dicas." },
+      { id: "type", title: "Escolha o tipo de texto", subtitle: "Cada tipo pede um jeito diferente de escrever.", bubble: "Agora escolha o tipo de texto que você quer escrever: história, relato ou opinião.", tip: "Se tiver personagem e acontecimentos, escolha história." },
+      { id: "theme", title: "Tema e título", subtitle: "Agora damos nome para a ideia.", bubble: "Tema é o assunto da redação. Título é o nome bonito que você dá para o seu texto.", tip: "Exemplo: o tema pode ser amizade. O título pode ser Meu melhor amigo." },
+      { id: "begin", title: "Começo", subtitle: "Mostre onde tudo começa.", bubble: "Escreva o começo. Conte quem aparece, onde está e como tudo começa.", tip: "Pergunte: quem? onde? quando?" },
+      { id: "middle", title: "Meio", subtitle: "A parte em que as coisas acontecem.", bubble: "Escreva o meio. Conte o que aconteceu depois ou explique melhor sua ideia.", tip: "Use depois, então, por isso ou por exemplo." },
+      { id: "end", title: "Final", subtitle: "Feche a redação com calma.", bubble: "Escreva o final. Mostre como terminou ou qual ideia você quer deixar.", tip: "Não precisa inventar coisa nova. Feche o que você já contou." },
       { id: "review", title: "Revisão final", subtitle: "Hora de olhar o texto inteiro.", bubble: "Leia sua redação inteira e veja se quer mudar alguma coisa antes da análise.", tip: "Melhorar uma coisa por vez funciona melhor." }
     ];
 
@@ -332,8 +332,13 @@
     portal.enabled = Boolean((portal.token || portal.childToken) && portal.returnUrl);
 
     const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {}, portalEventSaved: false };
+    const PORTAL_START_STEP = 1;
 
     function activeStep() { return steps[state.step]; }
+    function firstStepIndex() { return portal.enabled ? PORTAL_START_STEP : 0; }
+    function visibleStepNumber() {
+      return Math.min(portal.enabled ? state.step : state.step + 1, 6);
+    }
     function isWritingStep(id = activeStep().id) {
       return ["begin", "middle", "end"].includes(id);
     }
@@ -722,13 +727,12 @@
       });
       $("missionTitle").textContent = current.title;
       $("missionSubtitle").textContent = current.subtitle;
-      $("missionCount").textContent = `${Math.min(state.step + 1, 6)}/6`;
-      $("bubble").textContent = portal.enabled && current.id === "student"
-        ? `${portal.childName || "Vamos começar"}, faça a redação por etapas. No final, retorne à missão.`
-        : current.bubble;
+      const visibleStep = visibleStepNumber();
+      $("missionCount").textContent = `${visibleStep}/6`;
+      $("bubble").textContent = current.bubble;
       $("quickTip").textContent = current.tip;
-      $("progressBar").style.width = `${Math.min(((state.step + 1) / 6) * 100, 100)}%`;
-      $("backBtn").disabled = state.step === 0;
+      $("progressBar").style.width = `${Math.min((visibleStep / 6) * 100, 100)}%`;
+      $("backBtn").disabled = state.step <= firstStepIndex();
       $("nextBtn").classList.toggle("hidden", current.id === "review");
       $("validateBtn").classList.toggle("hidden", !["begin", "middle", "end"].includes(current.id));
       $("finishBtn").classList.toggle("hidden", current.id !== "review");
@@ -743,18 +747,22 @@
     }
 
     function renderSteps() {
-      $("stepList").innerHTML = steps.slice(0, 6).map((step, index) => `
-        <div class="stepItem ${index === state.step ? "active" : ""}">
+      const visibleSteps = portal.enabled ? steps.slice(PORTAL_START_STEP) : steps.slice(0, 6);
+      $("stepList").innerHTML = visibleSteps.map((step, index) => {
+        const realIndex = portal.enabled ? index + PORTAL_START_STEP : index;
+        return `
+        <div class="stepItem ${realIndex === state.step ? "active" : ""}">
           <span class="dot">${index + 1}</span>
-          <span>${step.title.replace(/^Missão \\d+: /, "")}</span>
+          <span>${step.title}</span>
         </div>
-      `).join("");
+      `;
+      }).join("");
     }
 
     function canAdvance() {
       const id = activeStep().id;
       if (isWritingStep(id)) return isCurrentStepValidated();
-      if (id === "student") return textValue("studentName") && textValue("studentAge");
+      if (id === "student") return portal.enabled || (textValue("studentName") && textValue("studentAge"));
       if (id === "type") return Boolean(state.type);
       if (id === "theme") return textValue("theme");
       if (id === "begin") return textValue("begin").length >= ageProfile().min;
@@ -775,7 +783,7 @@
 
     function back() {
       hideMessage();
-      state.step = Math.max(state.step - 1, 0);
+      state.step = Math.max(state.step - 1, firstStepIndex());
       render();
     }
 
@@ -873,10 +881,10 @@
 
     function reset() {
       ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => {
-        if (portal.enabled && id === "studentName") return;
+        if (portal.enabled && (id === "studentName" || id === "studentAge")) return;
         $(id).value = "";
       });
-      state.step = 0;
+      state.step = firstStepIndex();
       state.type = "";
       state.validatedSteps = {};
       document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
@@ -946,9 +954,8 @@
       $("adultMode").classList.add("hidden");
       $("childMode").classList.add("hidden");
       if (portal.childName) $("studentName").value = portal.childName;
-      $("bubble").textContent = portal.childName
-        ? `${portal.childName}, vamos fazer uma redação por etapas. No final, retorne à missão.`
-        : "Vamos fazer uma redação por etapas. No final, retorne à missão.";
+      if (!textValue("studentAge")) $("studentAge").value = "11";
+      state.step = Math.max(state.step, firstStepIndex());
       syncReturnPortalButton();
     }
 
