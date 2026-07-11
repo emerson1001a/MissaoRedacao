@@ -54,7 +54,7 @@
     button.blank { background: #fff; color: var(--muted); border: 1px solid var(--line); }
     button:disabled { opacity: .5; cursor: not-allowed; }
 
-    .grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; align-items: start; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
     .panel {
       background: rgba(255, 255, 255, .88); border: 1px solid var(--line);
       border-radius: 16px; box-shadow: var(--shadow);
@@ -90,9 +90,18 @@
     #childFeedback { white-space: pre-wrap; line-height: 1.5; }
     .finalText { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 
-    .sideCard { padding: 14px; border-top: 1px solid var(--line); }
-    .sideCard:first-child { border-top: 0; }
-    .stepList { display: grid; gap: 8px; }
+    .missionSupport {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #f8fbff;
+    }
+    .supportHeader { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+    .supportHeader h3 { margin-bottom: 2px; }
+    .stepList { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 8px; }
     .stepItem { display: flex; gap: 8px; align-items: center; color: var(--muted); }
     .dot { width: 22px; height: 22px; border-radius: 999px; display: grid; place-items: center; background: #e8edf7; color: var(--muted); font-size: 12px; font-weight: 900; }
     .stepItem.active { color: var(--ink); font-weight: 900; }
@@ -155,6 +164,16 @@
             <strong id="missionCount">1/6</strong>
           </div>
           <div class="progress"><div id="progressBar" class="bar"></div></div>
+          <div class="missionSupport">
+            <div class="supportHeader">
+              <div>
+                <h3>Etapas da redação</h3>
+                <p class="muted" id="quickTip">Uma frase boa já abre caminho para outra.</p>
+              </div>
+              <button id="printWorksheetSideBtn" type="button" class="secondary">Imprimir folha</button>
+            </div>
+            <div class="stepList" id="stepList"></div>
+          </div>
 
           <div class="mission" style="margin-top:16px">
             <div class="balloon" id="bubble">Escreva seu nome e sua idade para eu te conhecer melhor.</div>
@@ -236,21 +255,6 @@
           </div>
         </section>
 
-        <aside class="panel">
-          <div class="sideCard">
-            <h3>Mapa das missoes</h3>
-            <div class="stepList" id="stepList"></div>
-          </div>
-          <div class="sideCard">
-            <h3>Dica rápida</h3>
-            <p class="muted" id="quickTip">Uma frase boa já abre caminho para outra.</p>
-          </div>
-          <div class="sideCard">
-            <h3>Folha para escrever</h3>
-            <p class="muted">Gere uma folha com espaço para desenho e escrita.</p>
-            <button id="printWorksheetSideBtn" type="button" class="secondary">Imprimir folha</button>
-          </div>
-        </aside>
       </main>
 
       <main id="adultView" class="panel pad hidden">
