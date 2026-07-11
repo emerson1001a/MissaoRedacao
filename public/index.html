@@ -464,6 +464,11 @@
       const url = portalReturnUrl(status);
       if (url) window.location.href = url;
     }
+
+    function syncReturnPortalButton() {
+      $("returnPortalBtn").classList.toggle("hidden", !portal.enabled);
+    }
+
     async function sendPortalEvent(data) {
       if (!portal.enabled || state.portalEventSaved) return false;
       const returnUrl = new URL(portal.returnUrl);
@@ -804,7 +809,7 @@
       $("finishBtn").disabled = true;
       $("finishBtn").textContent = "Analisando...";
       $("childFeedback").classList.add("hidden");
-      $("returnPortalBtn").classList.add("hidden");
+      syncReturnPortalButton();
       try {
         const response = await fetch("/api/analisar", {
           method: "POST",
@@ -877,7 +882,7 @@
       document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
       hideMessage();
       $("childFeedback").classList.add("hidden");
-      $("returnPortalBtn").classList.add("hidden");
+      syncReturnPortalButton();
       render();
     }
 
@@ -944,6 +949,7 @@
       $("bubble").textContent = portal.childName
         ? `${portal.childName}, vamos fazer uma redação por etapas. No final, retorne à missão.`
         : "Vamos fazer uma redação por etapas. No final, retorne à missão.";
+      syncReturnPortalButton();
     }
 
     setupPortalMode();
