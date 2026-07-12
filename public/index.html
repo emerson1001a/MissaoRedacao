@@ -327,6 +327,8 @@
     const portal = {
       childId: params.get("child_id") || "",
       childName: params.get("child_name") || "",
+      childAge: params.get("child_age") || params.get("age") || params.get("idade") || "",
+      childBirthDate: params.get("child_birth_date") || params.get("birth_date") || "",
       token: params.get("portal_event_token") || "",
       childToken: params.get("portal_child_token") || "",
       assignmentId: params.get("assignment_id") || "",
@@ -347,6 +349,28 @@
       return ["begin", "middle", "end"].includes(id);
     }
     function textValue(id) { return ($(id).value || "").trim(); }
+    function ageFromPortal() {
+      const directAge = Number(portal.childAge);
+      if (Number.isFinite(directAge) && directAge >= 6 && directAge <= 18) return directAge;
+      const rawDate = String(portal.childBirthDate || "").slice(0, 10);
+      if (!rawDate) return null;
+      const [year, month, day] = rawDate.split("-").map(Number);
+      if (!year || !month || !day) return null;
+      const today = new Date();
+      let age = today.getFullYear() - year;
+      const hadBirthday =
+        today.getMonth() + 1 > month ||
+        (today.getMonth() + 1 === month && today.getDate() >= day);
+      if (!hadBirthday) age -= 1;
+      return age >= 6 && age <= 18 ? age : null;
+    }
+    function applyPortalIdentity() {
+      if (!portal.enabled) return;
+      if (portal.childName) $("studentName").value = portal.childName;
+      const portalAge = ageFromPortal();
+      if (portalAge) $("studentAge").value = String(portalAge);
+      if (!textValue("studentAge")) $("studentAge").value = "11";
+    }
     function currentAge() {
       const age = Number(textValue("studentAge"));
       return Number.isFinite(age) && age >= 6 && age <= 18 ? age : 11;
@@ -957,8 +981,7 @@
       document.body.classList.add("portal-mode");
       $("adultMode").classList.add("hidden");
       $("childMode").classList.add("hidden");
-      if (portal.childName) $("studentName").value = portal.childName;
-      if (!textValue("studentAge")) $("studentAge").value = "11";
+      applyPortalIdentity();
       state.step = Math.max(state.step, firstStepIndex());
       syncReturnPortalButton();
     }
