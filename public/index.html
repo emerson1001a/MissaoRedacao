@@ -82,11 +82,34 @@
     textarea { min-height: 180px; resize: vertical; line-height: 1.45; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
     .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { border: 1px solid #bdd2ff; background: var(--soft-blue); color: var(--blue); box-shadow: 0 8px 18px rgba(37, 99, 235, .10); }
-    .chip.active { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .chip {
+      border: 1px solid #93b4ff;
+      background: #e0ecff;
+      color: #1746a2;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .10);
+    }
+    .chip:hover { background: #d3e2ff; }
+    .chip.active {
+      background: var(--orange);
+      color: #fff;
+      border-color: var(--orange);
+      box-shadow: 0 10px 22px rgba(249, 115, 22, .22);
+    }
     .hidden { display: none !important; }
     .notice { padding: 12px; border-radius: 12px; background: var(--soft-green); border: 1px solid #ccebd6; margin-top: 12px; }
     .warning { background: var(--soft-orange); border-color: #fed7aa; }
+    .portalIdentitySummary {
+      display: none;
+      padding: 12px;
+      border-radius: 12px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .portalIdentitySummary strong { display: block; color: #172554; margin-bottom: 2px; }
+    body.portal-mode .portalIdentitySummary { display: block; }
     #childFeedback { white-space: pre-wrap; line-height: 1.5; }
     .finalText { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
 
@@ -158,7 +181,7 @@
         <section class="panel pad">
           <div class="cardTitle">
             <div>
-              <h2 id="missionTitle">Missão 1: quem está escrevendo?</h2>
+              <h2 id="missionTitle">Missão Redação</h2>
               <div class="muted" id="missionSubtitle">Vamos preparar sua aventura de escrita.</div>
             </div>
             <strong id="missionCount">1/6</strong>
@@ -176,6 +199,11 @@
           </div>
 
           <div class="mission" style="margin-top:16px">
+            <div id="portalIdentitySummary" class="portalIdentitySummary">
+              <strong>Atividade da missão</strong>
+              <span id="portalIdentityText">Nome e idade vieram do Portal Educacional.</span>
+            </div>
+
             <div class="balloon" id="bubble">Escreva seu nome e sua idade para eu te conhecer melhor.</div>
 
             <div id="stepStudent">
@@ -313,8 +341,8 @@
   <script>
     const $ = (id) => document.getElementById(id);
     const steps = [
-      { id: "student", title: "Preparar Redação", subtitle: "Vamos preparar sua aventura de escrita.", bubble: "Escreva seu nome e sua idade para eu te conhecer melhor.", tip: "Preencha nome e idade para eu adaptar as dicas." },
-      { id: "type", title: "Escolha o tipo de texto", subtitle: "Cada tipo pede um jeito diferente de escrever.", bubble: "Agora escolha o tipo de texto que você quer escrever: história, relato ou opinião.", tip: "Se tiver personagem e acontecimentos, escolha história." },
+      { id: "student", title: "Missão Redação", subtitle: "Vamos preparar sua aventura de escrita.", bubble: "Escreva seu nome e sua idade para eu te conhecer melhor.", tip: "Preencha nome e idade para eu adaptar as dicas." },
+      { id: "type", title: "Tipo de redação", subtitle: "Cada tipo pede um jeito diferente de escrever.", bubble: "Agora escolha o tipo de redação que você quer escrever: história, relato ou opinião.", tip: "Se tiver personagem e acontecimentos, escolha história." },
       { id: "theme", title: "Tema e título", subtitle: "Agora damos nome para a ideia.", bubble: "Tema é o assunto da redação. Título é o nome bonito que você dá para o seu texto.", tip: "Exemplo: o tema pode ser amizade. O título pode ser Meu melhor amigo." },
       { id: "begin", title: "Começo", subtitle: "Mostre onde tudo começa.", bubble: "Escreva o começo. Conte quem aparece, onde está e como tudo começa.", tip: "Pergunte: quem? onde? quando?" },
       { id: "middle", title: "Meio", subtitle: "A parte em que as coisas acontecem.", bubble: "Escreva o meio. Conte o que aconteceu depois ou explique melhor sua ideia.", tip: "Use depois, então, por isso ou por exemplo." },
@@ -370,6 +398,10 @@
       const portalAge = ageFromPortal();
       if (portalAge) $("studentAge").value = String(portalAge);
       if (!textValue("studentAge")) $("studentAge").value = "11";
+      const name = textValue("studentName") || "Aluno da missão";
+      const age = Number(textValue("studentAge"));
+      const ageText = Number.isFinite(age) && age >= 6 && age <= 18 ? `, ${age} anos` : "";
+      $("portalIdentityText").textContent = `${name}${ageText}. Esta missão veio pronta do Portal Educacional.`;
     }
     function currentAge() {
       const age = Number(textValue("studentAge"));
