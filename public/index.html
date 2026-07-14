@@ -112,6 +112,18 @@
     body.portal-mode .portalIdentitySummary { display: block; }
     #childFeedback { white-space: pre-wrap; line-height: 1.5; }
     .finalText { white-space: pre-wrap; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+    .reviewText {
+      min-height: 260px;
+      margin-top: 12px;
+      background: #fff;
+      border: 2px solid #bfdbfe;
+      box-shadow: 0 10px 24px rgba(59, 130, 246, .08);
+    }
+    .reviewHint {
+      background: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e3a8a;
+    }
 
     .missionSupport {
       display: grid;
@@ -264,9 +276,13 @@
             <div id="stepReview" class="hidden">
               <div class="notice">
                 <strong>Redação montada!</strong>
-                <p class="muted">Quando estiver pronto, clique em analisar redação.</p>
+                <p class="muted">Leia o texto e, se quiser, melhore só uma coisa antes da análise.</p>
               </div>
-              <div id="fullText" class="finalText"></div>
+              <div class="notice reviewHint">
+                <strong>Revisão rápida:</strong>
+                <span id="reviewSuggestion">Escolha uma melhoria pequena.</span>
+              </div>
+              <textarea id="fullText" class="reviewText" aria-label="Texto final da redação"></textarea>
               <div id="childFeedback" class="notice hidden"></div>
             </div>
 
@@ -365,7 +381,7 @@
     };
     portal.enabled = Boolean((portal.token || portal.childToken) && portal.returnUrl);
 
-    const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {}, portalEventSaved: false };
+    const state = { step: 0, type: "", validating: false, analyzing: false, validatedSteps: {}, portalEventSaved: false, reviewDirty: false, reviewSource: "" };
     const PORTAL_START_STEP = 1;
 
     function activeStep() { return steps[state.step]; }
@@ -511,11 +527,27 @@
     function essayText() {
       return [textValue("begin"), textValue("middle"), textValue("end")].filter(Boolean).join("\n\n");
     }
+    function finalEssayText() {
+      if (activeStep().id === "review") return textValue("fullText") || essayText();
+      return essayText();
+    }
+    function reviewSuggestion(text) {
+      const clean = String(text || "").trim();
+      const paragraphs = clean.split(/\n\s*\n/).filter(Boolean);
+      const lower = clean.toLowerCase();
+      if (paragraphs.length < 3) return "Veja se dá para separar começo, meio e final em partes bem claras.";
+      if (!/[.!?]\s*$/.test(clean)) return "Confira se o final termina com uma frase completa.";
+      if (!/\b(depois|então|quando|no final|por fim|porque|por isso)\b/i.test(lower)) {
+        return "Veja se uma palavra de ligação, como depois, então ou por fim, ajuda o leitor.";
+      }
+      if (clean.length < ageProfile().min * 5) return "Escolha uma frase importante e acrescente um detalhe.";
+      return "Leia com calma e escolha apenas uma frase para deixar mais clara.";
+    }
     function displayType() {
       return { historia: "história", relato: "relato", opiniao: "opinião" }[state.type] || "(não escolhido)";
     }
     function payload() {
-      return { ...student(), tipo: state.type, tema: textValue("theme"), titulo: textValue("title"), texto: essayText() };
+      return { ...student(), tipo: state.type, tema: textValue("theme"), titulo: textValue("title"), texto: finalEssayText() };
     }
     function portalReturnUrl(status = "activity_saved") {
       if (!portal.returnUrl) return "";
@@ -537,7 +569,8 @@
     async function sendPortalEvent(data) {
       if (!portal.enabled || state.portalEventSaved) return false;
       const returnUrl = new URL(portal.returnUrl);
-      const words = essayText().split(/\s+/).filter(Boolean).length;
+      const finalText = finalEssayText();
+      const words = finalText.split(/\s+/).filter(Boolean).length;
       const headers = { "Content-Type": "application/json" };
       if (portal.token) headers["X-Portal-Activity-Token"] = portal.token;
       if (portal.childToken) headers["X-Portal-Child-Token"] = portal.childToken;
@@ -555,7 +588,7 @@
           title: textValue("title") || textValue("theme") || "Redação concluída",
           metrics: {
             words,
-            chars: essayText().length,
+            chars: finalText.length,
             type: state.type || "",
             theme: textValue("theme") || ""
           },
@@ -574,7 +607,7 @@
             }
           },
           artifacts: {
-            text: essayText(),
+            text: finalText,
             title: textValue("title") || "",
             theme: textValue("theme") || "",
             type: state.type || ""
@@ -642,7 +675,7 @@
         ...payload(),
         id: Date.now(),
         created_at: new Date().toISOString(),
-        texto_original: essayText(),
+        texto_original: finalEssayText(),
         review,
         orientacao_adulto: adultGuidance
       };
@@ -802,7 +835,14 @@
       $("nextBtn").classList.toggle("blank", needsValidation && !validated);
       $("validateBtn").classList.toggle("ghost", needsValidation && validated);
       $("validateBtn").disabled = needsValidation && validated;
-      $("fullText").textContent = `Tema: ${textValue("theme")}\nTítulo: ${textValue("title")}\nTipo: ${displayType()}\n\n${essayText()}`;
+      if (current.id === "review") {
+        const baseText = essayText();
+        if (!state.reviewDirty && state.reviewSource !== baseText) {
+          $("fullText").value = baseText;
+          state.reviewSource = baseText;
+        }
+        $("reviewSuggestion").textContent = reviewSuggestion(baseText);
+      }
       renderSteps();
     }
 
@@ -947,6 +987,9 @@
       state.step = firstStepIndex();
       state.type = "";
       state.validatedSteps = {};
+      state.reviewDirty = false;
+      state.reviewSource = "";
+      $("fullText").value = "";
       document.querySelectorAll("[data-type]").forEach((button) => button.classList.remove("active"));
       hideMessage();
       $("childFeedback").classList.add("hidden");
@@ -1000,10 +1043,17 @@
     ["studentName", "studentAge", "theme", "title", "begin", "middle", "end"].forEach((id) => {
       $(id).addEventListener("input", () => {
         const stepByInput = { begin: "begin", middle: "middle", end: "end" }[id];
-        if (stepByInput) resetValidationFor(stepByInput);
+        if (stepByInput) {
+          resetValidationFor(stepByInput);
+          state.reviewDirty = false;
+          state.reviewSource = "";
+        }
         if (id === "studentAge") updateAdultCards();
         render();
       });
+    });
+    $("fullText").addEventListener("input", () => {
+      state.reviewDirty = true;
     });
     $("adultAge").addEventListener("input", updateAdultCards);
     $("adultName").addEventListener("input", updateAdultCards);
